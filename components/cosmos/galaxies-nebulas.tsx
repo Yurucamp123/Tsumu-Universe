@@ -67,6 +67,8 @@ export function GalaxiesNebulas({ atmosphereColor, onHover }: Props) {
   const [selectedSong, setSelectedSong] = useState<Song | undefined>(undefined)
   const isInitializedRef = useRef(false)
 
+  const scaleRef = useRef(1)
+
   useEffect(() => {
     // Normalize mouse position to 0-1 range
     mousePosRef.current = {
@@ -87,9 +89,18 @@ export function GalaxiesNebulas({ atmosphereColor, onHover }: Props) {
     const resize = () => {
       canvas.width = window.innerWidth
       canvas.height = window.innerHeight
+      // Responsive scale: Base 1920px. 
+      // minimal value 0.6 prevents objects from becoming too small on mobile
+      // On mobile (portrait), we might want them slightly larger relative to width for touchability
+      const isMobile = window.innerWidth < 768
+      const baseScale = window.innerWidth / 1920
+      scaleRef.current = isMobile ? Math.max(baseScale * 1.5, 0.5) : Math.max(baseScale, 0.6)
     }
     resize()
     window.addEventListener("resize", resize)
+
+
+
 
     // Initialize galaxies (smaller and more detailed)
     if (galaxiesRef.current.length === 0) {
@@ -159,7 +170,7 @@ export function GalaxiesNebulas({ atmosphereColor, onHover }: Props) {
         if (clickRippleRef.current.time < 1) {
           const rippleX = clickRippleRef.current.x * canvas.width
           const rippleY = clickRippleRef.current.y * canvas.height
-          const rippleSize = clickRippleRef.current.time * 200
+          const rippleSize = clickRippleRef.current.time * 200 * scaleRef.current
           const rippleAlpha = (1 - clickRippleRef.current.time) * 0.6
 
           const rippleGradient = ctx.createRadialGradient(rippleX, rippleY, 0, rippleX, rippleY, rippleSize)
@@ -212,7 +223,7 @@ export function GalaxiesNebulas({ atmosphereColor, onHover }: Props) {
 
         // Hover effects like stars - subtle
         const hoverScale = isHovered ? 1.1 : 1
-        const effectiveSize = gsize * hoverScale
+        const effectiveSize = gsize * hoverScale * scaleRef.current
         const effectiveRotation = galaxy.rotation // Use direct accumulated rotation
         const brightness = isHovered ? galaxy.brightness * 1.5 : galaxy.brightness
         const glowIntensity = isHovered ? 1.3 : 1
@@ -435,7 +446,7 @@ export function GalaxiesNebulas({ atmosphereColor, onHover }: Props) {
 
         // Hover effects like stars - subtle
         const hoverScale = isHovered ? 1.3 : 1
-        const effectiveSize = nsize * hoverScale
+        const effectiveSize = nsize * hoverScale * scaleRef.current
         const brightness = isHovered ? nebula.brightness * 1.5 : nebula.brightness
         const pulse = isHovered ? 0.95 + 0.15 * Math.sin(time * 3 + nebula.rotation) : 0.9 + 0.1 * Math.sin(time * 2 + nebula.rotation)
         const glowIntensity = isHovered ? 1.3 : 1
@@ -680,7 +691,7 @@ export function GalaxiesNebulas({ atmosphereColor, onHover }: Props) {
         <div
           className="fixed pointer-events-none text-center z-30"
           style={{
-            left: `${hoveredObject.x * (typeof window !== "undefined" ? window.innerWidth : 1920)}px`,
+            left: `${Math.max(window.innerWidth * 0.1, Math.min(window.innerWidth * 0.9, hoveredObject.x * (typeof window !== "undefined" ? window.innerWidth : 1920)))}px`,
             top: `${hoveredObject.y * (typeof window !== "undefined" ? window.innerHeight : 1080) - 60}px`,
             transform: "translateX(-50%)",
           }}

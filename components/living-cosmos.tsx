@@ -6,6 +6,10 @@ import { PianoVoid } from "@/components/cosmos/piano-void"
 import { RealTimeAtmosphere } from "@/components/cosmos/real-time-atmosphere"
 import { GalaxiesNebulas } from "@/components/cosmos/galaxies-nebulas"
 import { ShootingStars } from "@/components/cosmos/shooting-stars"
+import { MessageStar } from "@/components/cosmos/message-star"
+import { MessageModal } from "@/components/connection/message-modal"
+import { FireworkEffect } from "@/components/connection/firework-effect"
+import { SuccessNotification } from "@/components/connection/success-notification"
 import { ObservatoryButton } from "@/components/observatory/observatory-button"
 import { ObservatoryModal } from "@/components/observatory/observatory-modal"
 import { isJapanDaytime } from "@/utils/time"
@@ -25,6 +29,9 @@ export function LivingCosmos() {
   })
   const [emotionalColor, setEmotionalColor] = useState<string | undefined>(undefined)
   const [isObservatoryOpen, setIsObservatoryOpen] = useState(false)
+  const [isMessageModalOpen, setIsMessageModalOpen] = useState(false)
+  const [showFirework, setShowFirework] = useState(false)
+  const [showSuccessNotification, setShowSuccessNotification] = useState(false)
 
   // Use refs to avoid re-renders
   const atmosphereColorsRef = useRef<AtmosphereColors>(atmosphereColors)
@@ -46,6 +53,36 @@ export function LivingCosmos() {
     const interval = setInterval(updateTime, 60000)
     return () => clearInterval(interval)
   }, [])
+
+  const handleMessageSend = async (message: string) => {
+    try {
+      const response = await fetch('/api/message', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ message }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to send message')
+      }
+
+      // Success - show both effects independently
+      setIsMessageModalOpen(false)
+      setShowFirework(true)
+      setShowSuccessNotification(true)
+
+      // Notification stays for full 15 seconds
+      setTimeout(() => setShowSuccessNotification(false), 15000)
+
+      // Firework also lasts exactly 15 seconds
+      setTimeout(() => setShowFirework(false), 15000)
+    } catch (error) {
+      console.error('Error sending message:', error)
+      alert("メッセージの送信に失敗しました。\n(開発中: webhook URLを確認してください)")
+    }
+  }
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
     mouseRef.current = {
@@ -420,6 +457,19 @@ export function LivingCosmos() {
       {/* Observatory System */}
       <ObservatoryButton onClick={() => setIsObservatoryOpen(true)} />
       <ObservatoryModal isOpen={isObservatoryOpen} onClose={() => setIsObservatoryOpen(false)} />
+
+      {/* Connection Module */}
+      <MessageStar onOpen={() => setIsMessageModalOpen(true)} />
+      <MessageModal
+        isOpen={isMessageModalOpen}
+        onClose={() => setIsMessageModalOpen(false)}
+        onSend={handleMessageSend}
+      />
+      {showFirework && <FireworkEffect onComplete={() => setShowFirework(false)} />}
+      <SuccessNotification
+        isVisible={showSuccessNotification}
+        onClose={() => setShowSuccessNotification(false)}
+      />
     </div>
   )
 }

@@ -21,74 +21,57 @@ interface Props {
     position?: { x: number; y: number }
 }
 
-const VisualizerBar = memo(({ i, isPlaying, color }: { i: number, isPlaying: boolean, color: string }) => {
+
+// Sparkling Effect for Disc
+const DiscSparkles = memo(({ isPlaying, color }: { isPlaying: boolean, color: string }) => {
+    if (!isPlaying) return null
+
+    // Generate random static sparkles
+    const sparkles = Array.from({ length: 8 }).map((_, i) => ({
+        id: i,
+        top: `${20 + Math.random() * 60}%`,
+        left: `${20 + Math.random() * 60}%`,
+        delay: Math.random() * 2,
+        duration: 2 + Math.random() * 3
+    }))
+
     return (
-        <div className="flex-1 h-full relative group flex flex-col justify-end items-center">
-            {/* Peak Indicator Dot */}
-            <motion.div
-                animate={isPlaying ? {
-                    y: [-5, -15 - (i % 7) * 4 - Math.random() * 10, -5],
-                    opacity: [0, 1, 0.4, 0]
-                } : { y: -5, opacity: 0 }}
-                transition={isPlaying ? {
-                    repeat: Infinity,
-                    duration: 0.8 + (i % 4) * 0.2,
-                    delay: i * 0.03,
-                    ease: "easeOut"
-                } : { duration: 0.3 }}
-                className="w-[3px] h-[3px] rounded-full bg-white shadow-[0_0_8px_#fff] will-change-transform"
-                style={{ transform: 'translateZ(0)' }}
-            />
-            {/* Main Bar */}
-            <motion.div
-                animate={isPlaying ? {
-                    scaleY: [0.3, 0.6 + (i % 10) * 0.04, 0.3, 0.8 + (i % 8) * 0.02, 0.3],
-                    opacity: [0.6, 1, 0.6]
-                } : { scaleY: 0.1, opacity: 0.3 }}
-                transition={isPlaying ? {
-                    repeat: Infinity,
-                    duration: 1.2 + (i % 5) * 0.2,
-                    delay: i * 0.02,
-                    ease: "linear"
-                } : { duration: 0.5 }}
-                className="w-full h-full rounded-t-[3px] origin-bottom will-change-transform"
-                style={{
-                    background: `linear-gradient(to top, ${color} 0%, #fff 100%)`,
-                    boxShadow: `0 0 10px ${color.replace("rgb", "rgba").replace(")", ", 0.2)")}`,
-                    transform: 'translateZ(0)'
-                }}
-            />
+        <div className="absolute inset-0 rounded-full z-20 pointer-events-none overflow-hidden">
+            {sparkles.map((s) => (
+                <motion.div
+                    key={s.id}
+                    animate={{
+                        opacity: [0, 1, 0],
+                        scale: [0, 1.2, 0],
+                        rotate: [0, 45, 90]
+                    }}
+                    transition={{
+                        duration: s.duration,
+                        repeat: Infinity,
+                        delay: s.delay,
+                        ease: "easeInOut"
+                    }}
+                    className="absolute w-2 h-2 md:w-3 md:h-3"
+                    style={{
+                        top: s.top,
+                        left: s.left,
+                        background: `radial-gradient(circle, #fff 10%, ${color} 60%, transparent 100%)`,
+                        boxShadow: `0 0 4px 1px #fff`,
+                        clipPath: "polygon(50% 0%, 60% 40%, 100% 50%, 60% 60%, 50% 100%, 40% 60%, 0% 50%, 40% 40%)" // Star shape
+                    }}
+                />
+            ))}
         </div>
     )
 })
 
-const ReflectionBar = memo(({ i, isPlaying }: { i: number, isPlaying: boolean }) => {
-    return (
-        <motion.div
-            animate={isPlaying ? {
-                scaleY: [0.2, 0.4 + (i % 6) * 0.1, 0.2],
-                x: [0, 2, -2, 0],
-                opacity: [0.05, 0.1, 0.05]
-            } : { scaleY: 0.05, opacity: 0.02 }}
-            transition={isPlaying ? {
-                repeat: Infinity,
-                duration: 1.5 + (i % 4) * 0.5,
-                ease: "easeInOut"
-            } : { duration: 1 }}
-            className="flex-1 w-full bg-white rounded-b-full origin-top will-change-transform"
-            style={{ transform: 'translateZ(0)' }}
-        />
-    )
-})
 
-
-// Simple Disc Animation - Subtle ring pulse when playing
+// Simple Disc Animation
 const DiscPlayingEffect = memo(({ isPlaying, isBuffering, color }: { isPlaying: boolean, isBuffering: boolean, color: string }) => {
     if (!isPlaying && !isBuffering) return null
 
     return (
         <>
-            {/* Subtle pulse ring on outer edge */}
             <motion.div
                 className="absolute inset-0 rounded-full pointer-events-none"
                 initial={{ opacity: 0 }}
@@ -109,56 +92,149 @@ const DiscPlayingEffect = memo(({ isPlaying, isBuffering, color }: { isPlaying: 
     )
 })
 
-
-// Subtle Constellation Sparkles Component - Refined for elegance
-const ConstellationSparkles = memo(({ isPlaying, isBuffering, color }: { isPlaying: boolean, isBuffering: boolean, color: string }) => {
-    // Generate stable sparkle positions using useMemo (only once)
-    const sparkles = useMemo(() => {
-        return Array.from({ length: 25 }).map((_, i) => {
-            const angle = (i * 137.5) % 360 // Golden angle distribution
-            // Modified: Only place sparkles in outer ring (25-45% radius) to avoid center glow
-            const radius = 25 + Math.sqrt(i / 25) * 20 // Range: 25-45%
-            const x = 50 + Math.cos((angle * Math.PI) / 180) * radius
-            const y = 50 + Math.sin((angle * Math.PI) / 180) * radius
-
-            return {
-                id: i,
-                x,
-                y,
-                size: 1 + (i % 2) * 0.5, // 1-1.5px (smaller, more subtle)
-                duration: 2 + (i % 5) * 0.4, // 2-4s (slower, gentler)
-                delay: (i * 0.2) % 4, // Staggered 0-4s
-                color: i % 8 === 0 ? color : '#fff'
-            }
-        })
-    }, [color])
+// Cosmic Piano Visualizer - Left Panel Edition
+const CosmicPiano = memo(({ isPlaying, color }: { isPlaying: boolean, color: string }) => {
+    // Generate 80 keys (More keys as requested)
+    const keys = useMemo(() => Array.from({ length: 80 }, (_, i) => i), [])
 
     return (
-        <div className="absolute inset-0 rounded-full overflow-hidden pointer-events-none">
-            {sparkles.map((sparkle) => (
+        // Lifted UP (bottom-20) and DRASTICALLY Narrower Width (max-w-[300px] mx-auto)
+        // VISIBILITY FIX: Opacity 0 if not playing
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: isPlaying ? 1 : 0 }}
+            transition={{ duration: 1 }}
+            className="absolute bottom-20 left-0 right-0 h-96 overflow-visible pointer-events-none z-0 px-4 w-full max-w-[300px] mx-auto"
+        >
+
+            {/* Nebula/Aurora Backdrop */}
+            <motion.div
+                animate={isPlaying ? { opacity: [0.3, 0.5, 0.3] } : { opacity: 0 }}
+                transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+                className="absolute inset-0 bottom-10 z-0 opacity-30"
+                style={{
+                    background: `radial-gradient(ellipse at center bottom, ${color}30 0%, transparent 70%)`,
+                    filter: 'blur(40px)',
+                    transform: 'translateZ(0)'
+                }}
+            />
+
+            {/* Floor Reflection */}
+            <motion.div
+                animate={{ opacity: isPlaying ? 0.3 : 0 }}
+                transition={{ duration: 1 }}
+                className="absolute top-full left-0 right-0 h-24 scale-y-[-1] mask-reflection z-0"
+                style={{
+                    maskImage: 'linear-gradient(to bottom, black, transparent)',
+                    WebkitMaskImage: 'linear-gradient(to bottom, black, transparent)',
+                }}
+            >
+                <div className="w-full h-full bg-gradient-to-t from-transparent via-white/10 to-transparent blur-xl" />
+            </motion.div>
+
+            {/* Key container - Tighter gap for more keys */}
+            <div className="flex items-end justify-center h-full gap-[1px] md:gap-[2px] opacity-100 relative z-10 pb-2">
+                {keys.map((i) => (
+                    <PianoKey key={i} i={i} isPlaying={isPlaying} />
+                ))}
+            </div>
+        </motion.div>
+    )
+})
+
+const PianoKey = memo(({ i, isPlaying }: { i: number, isPlaying: boolean }) => {
+    const [isActive, setIsActive] = useState(false)
+
+    // Vivid Colors
+    const noteColor = useMemo(() => {
+        const hue = (180 + (i * 4)) % 360;
+        return `hsl(${hue}, 100%, 70%)`;
+    }, [i])
+
+    useEffect(() => {
+        if (!isPlaying) {
+            setIsActive(false)
+            return
+        }
+
+        const distanceFromCenter = Math.abs(i - 40); // Adjusted center for 80 keys
+        const activityChance = 0.90 + (distanceFromCenter * 0.002);
+
+        const interval = setInterval(() => {
+            if (Math.random() > activityChance) {
+                setIsActive(true)
+                // Slower reset
+                setTimeout(() => setIsActive(false), 1200 + Math.random() * 2000)
+            }
+        }, 300 + Math.random() * 1000)
+
+        return () => clearInterval(interval)
+    }, [isPlaying, i])
+
+    // Floating Particles
+    const sparkles = useMemo(() => Array.from({ length: 2 }).map(() => ({
+        x: (Math.random() - 0.5) * 40,
+        y: -30 - Math.random() * 80,
+        scale: 0.5 + Math.random(),
+        delay: Math.random() * 0.5
+    })), [])
+
+    return (
+        <div className="relative flex-1 h-full flex flex-col justify-end items-center group">
+
+            {/* The Beam - Thinner for more keys */}
+            <motion.div
+                animate={isActive ? {
+                    height: [0, 80 + Math.random() * 80],
+                    opacity: [0, 1, 1, 0],
+                } : { height: 0, opacity: 0 }}
+                transition={{
+                    duration: 6,
+                    times: [0, 0.1, 0.7, 1],
+                    ease: "easeInOut"
+                }}
+                className="w-[2px] md:w-[3px] absolute bottom-0 rounded-t-lg origin-bottom"
+                style={{
+                    // Solid White Core -> Vibrant Color -> Transparent
+                    background: `linear-gradient(to top, #ffffff 40%, ${noteColor} 90%, transparent)`,
+                    boxShadow: `0 0 20px ${noteColor}`,
+                    zIndex: 1
+                }}
+            />
+
+            {/* The Base Hit - Smaller */}
+            <motion.div
+                animate={isActive ? {
+                    scale: [0, 2, 0],
+                    opacity: [1, 1, 0]
+                } : { scale: 0, opacity: 0 }}
+                transition={{ duration: 0.8, ease: "easeOut" }}
+                className="w-1.5 h-1.5 md:w-2 md:h-2 absolute bottom-0 rounded-full bg-white"
+                style={{
+                    boxShadow: `0 0 25px 6px ${noteColor}`,
+                    zIndex: 2
+                }}
+            />
+
+            {/* Slow Drifting Particles */}
+            {sparkles.map((sparkle, idx) => (
                 <motion.div
-                    key={`star-${sparkle.id}`}
-                    initial={{ opacity: 0, scale: 0 }}
-                    animate={(isPlaying || isBuffering) ? {
-                        opacity: [0, 0.5, 0.8, 0.7, 0], // Brighter opacity (max 0.8)
-                        scale: [0, 1, 0.9, 1.1, 0], // Subtle scale
-                    } : { opacity: 0, scale: 0 }}
-                    transition={(isPlaying || isBuffering) ? {
-                        duration: sparkle.duration,
-                        repeat: Infinity,
-                        delay: sparkle.delay,
-                        ease: "easeInOut"
-                    } : { duration: 0.4 }}
-                    className="absolute rounded-full will-change-transform"
+                    key={idx}
+                    animate={isActive ? {
+                        y: [0, sparkle.y],
+                        x: [0, sparkle.x],
+                        opacity: [1, 1, 1, 0],
+                        scale: [0, sparkle.scale, 0]
+                    } : { opacity: 0, y: 0 }}
+                    transition={{
+                        duration: 7 + Math.random() * 3,
+                        ease: "easeOut",
+                        delay: sparkle.delay
+                    }}
+                    className="absolute bottom-0 w-[2px] h-[2px] rounded-full bg-white"
                     style={{
-                        left: `${sparkle.x}%`,
-                        top: `${sparkle.y}%`,
-                        width: `${sparkle.size}px`,
-                        height: `${sparkle.size}px`,
-                        background: sparkle.color,
-                        boxShadow: `0 0 ${sparkle.size * 3}px ${sparkle.size}px ${sparkle.color}60, 0 0 ${sparkle.size * 6}px ${sparkle.size * 2}px ${sparkle.color}30`, // Brighter glow
-                        filter: 'brightness(1.6)', // Increased brightness
-                        transform: 'translateZ(0)'
+                        boxShadow: `0 0 8px 2px ${noteColor}`,
+                        zIndex: 3
                     }}
                 />
             ))}
@@ -171,6 +247,7 @@ export function CelestialModal({ isOpen, onClose, type, color = "rgb(255, 100, 2
     const [isPlaying, setIsPlaying] = useState(false)
     const [isBuffering, setIsBuffering] = useState(false)
     const [hasInteracted, setHasInteracted] = useState(false)
+    const [isPlayerReady, setIsPlayerReady] = useState(false)
     const playerRef = useRef<any>(null)
     const playerContainerId = 'youtube-player-container'
 
@@ -185,26 +262,22 @@ export function CelestialModal({ isOpen, onClose, type, color = "rgb(255, 100, 2
     const youtubeIdVal = song ? getYoutubeId(song.youtubeUrl) : null
     const thumbnailUrl = youtubeIdVal ? `https://img.youtube.com/vi/${youtubeIdVal}/maxresdefault.jpg` : null
 
-    // Load YouTube API - Only on interaction
+    // Load YouTube API
     useEffect(() => {
         if (!isOpen || !youtubeIdVal || !hasInteracted) return
 
         let isMounted = true
 
         const initPlayer = () => {
-            // ... existing init logic
             if (!window.YT || !window.YT.Player || !isMounted) return
 
-            if (playerRef.current) {
-                // Already initialized
-                return
-            }
+            if (playerRef.current) return
 
             playerRef.current = new window.YT.Player(playerContainerId, {
                 videoId: youtubeIdVal,
                 playerVars: {
                     enablejsapi: 1,
-                    autoplay: 1, // Always autoplay on init
+                    autoplay: 1,
                     controls: 1,
                     modestbranding: 1,
                     rel: 0,
@@ -221,6 +294,7 @@ export function CelestialModal({ isOpen, onClose, type, color = "rgb(255, 100, 2
                         if (isMounted) {
                             event.target.playVideo()
                             setIsPlaying(true)
+                            setIsPlayerReady(true)
                         }
                     },
                     onStateChange: (event: any) => {
@@ -256,19 +330,14 @@ export function CelestialModal({ isOpen, onClose, type, color = "rgb(255, 100, 2
 
         return () => {
             isMounted = false
-            // Don't destroy player on unmount to keep state if reopened, 
-            // but for this modal architecture we might want cleanup
         }
     }, [isOpen, youtubeIdVal, hasInteracted])
-
-
 
 
     // Toggle Playback Logic
     const togglePlayback = () => {
         if (!hasInteracted) {
             setHasInteracted(true)
-            // Player initialization happens in useEffect when hasInteracted becomes true
             return
         }
 
@@ -285,18 +354,34 @@ export function CelestialModal({ isOpen, onClose, type, color = "rgb(255, 100, 2
     useEffect(() => {
         if (!isOpen) {
             setIsPlaying(false)
+            setIsPlayerReady(false)
+            setHasInteracted(false)
             if (playerRef.current) {
-                playerRef.current.pauseVideo()
+                try {
+                    playerRef.current.destroy()
+                } catch (e) {
+                    console.error("Error destroying player:", e)
+                }
+                playerRef.current = null
             }
         }
     }, [isOpen])
 
     useEffect(() => {
         setIsPlaying(false)
+        setIsPlayerReady(false)
+        setHasInteracted(false)
+        if (playerRef.current) {
+            try {
+                playerRef.current.destroy()
+            } catch (e) {
+                console.error("Error destroying player:", e)
+            }
+            playerRef.current = null
+        }
     }, [song])
 
 
-    // Japanese translations for types
     const getJPType = (rawType: string) => {
         switch (rawType) {
             case "spiral": return "渦巻銀河"
@@ -326,8 +411,6 @@ export function CelestialModal({ isOpen, onClose, type, color = "rgb(255, 100, 2
         return "宇宙に広がるガスと塵の巨大な雲。"
     }
 
-    const visualizerBars = Array.from({ length: 30 })
-    const sparkleParticles = Array.from({ length: 25 })
 
     return (
         <AnimatePresence>
@@ -344,16 +427,16 @@ export function CelestialModal({ isOpen, onClose, type, color = "rgb(255, 100, 2
                     <motion.div
                         initial={{ scale: 0.9, opacity: 0, y: 30 }}
                         animate={{ scale: 1, opacity: 1, y: 0 }}
-                        exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                        exit={{ scale: 0.9, opacity: 0, y: 30 }}
                         transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                        className="relative w-full max-w-6xl h-[85vh] overflow-hidden rounded-[3rem] border border-white/20 bg-black/40 shadow-[0_32px_128px_-16px_rgba(0,0,0,1)] flex flex-col md:flex-row backdrop-blur-[50px]"
+                        className="relative w-full max-w-6xl h-full lg:h-[85vh] overflow-y-auto lg:overflow-hidden rounded-none lg:rounded-[3rem] border-0 lg:border border-white/20 bg-black/90 lg:bg-black/40 shadow-none lg:shadow-[0_32px_128px_-16px_rgba(0,0,0,1)] flex flex-col lg:flex-row backdrop-blur-[50px]"
                         style={{
                             boxShadow: `0 0 150px -40px ${color.replace("rgb", "rgba").replace(")", ", 0.5)")}, 
                           inset 0 0 0 1px rgba(255,255,255,0.1),
                           inset 0 0 100px -20px ${color.replace("rgb", "rgba").replace(")", ", 0.1)")}`,
                         }}
                     >
-                        {/* Ambient Background Glows */}
+                        {/* Background */}
                         <div className="absolute inset-0 pointer-events-none overflow-hidden">
                             <motion.div
                                 animate={{
@@ -364,37 +447,24 @@ export function CelestialModal({ isOpen, onClose, type, color = "rgb(255, 100, 2
                                 className="absolute -top-[20%] -right-[10%] w-[90%] h-[90%] rounded-full blur-[160px] mix-blend-screen"
                                 style={{ background: color }}
                             />
-                            <motion.div
-                                animate={{
-                                    scale: isPlaying ? [1, 1.3, 1.15, 1.35, 1] : 1,
-                                    opacity: isPlaying ? [0.1, 0.2, 0.15, 0.25, 0.1] : 0.05
-                                }}
-                                transition={{ repeat: Infinity, duration: 5, ease: "easeInOut", delay: 1 }}
-                                className="absolute bottom-[-10%] left-[-10%] w-[70%] h-[70%] rounded-full blur-[140px] mix-blend-screen"
-                                style={{ background: color }}
-                            />
                             <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.4)_100%)]" />
                         </div>
 
-                        {/* Close Button */}
+                        {/* Top Right Close Button */}
                         <button
                             onClick={onClose}
-                            className="absolute top-10 right-10 z-50 p-4 rounded-2xl bg-white/5 hover:bg-white/10 text-white/40 hover:text-white transition-all border border-white/10 backdrop-blur-2xl group"
+                            className="absolute top-6 right-6 lg:top-10 lg:right-10 z-50 p-3 lg:p-4 rounded-2xl bg-white/10 text-white hover:bg-white/20 transition-all border border-white/10 backdrop-blur-2xl group shadow-2xl"
                         >
-                            <X className="w-6 h-6 transition-transform group-hover:rotate-90" />
+                            <X className="w-5 h-5 lg:w-6 lg:h-6 transition-transform group-hover:rotate-90" />
                         </button>
 
-                        {/* Left Section: Ultra HD Player (44%) */}
-                        <div className="relative w-full md:w-[44%] h-full flex flex-col items-center justify-center p-14 border-b md:border-b-0 md:border-r border-white/10">
+                        {/* LEFT SECTION (Record Player & Info & Visualizer) */}
+                        <div className="relative w-full lg:w-[44%] shrink-0 flex flex-col items-center justify-start pt-8 lg:pt-12 p-8 lg:p-14 border-b lg:border-b-0 lg:border-r border-white/10 bg-black/20 lg:bg-transparent min-h-[50vh] lg:min-h-full">
 
-                            {/* Advanced Record Player Housing */}
-                            <div className="relative mb-16 group">
-                                {/* Realistic Groove Shadow */}
+                            {/* Record Player Group */}
+                            <div className="relative mb-8 group z-20">
                                 <div className="absolute inset-x-[-15%] top-[-5%] bottom-[-15%] rounded-full bg-black/40 blur-3xl opacity-60" />
-
-                                {/* SHARP VINYL V4 */}
                                 <div className="absolute inset-0 rounded-full z-0 pointer-events-none">
-                                    {/* Rhythmic Pulse Ring (Celestial Resonance) */}
                                     <AnimatePresence>
                                         {isPlaying && (
                                             <motion.div
@@ -405,127 +475,78 @@ export function CelestialModal({ isOpen, onClose, type, color = "rgb(255, 100, 2
                                             />
                                         )}
                                     </AnimatePresence>
-
-                                    {/* Halo removed - was causing center glow */}
                                     <div className="absolute inset-[-1px] rounded-full border border-white/10 z-10" />
                                 </div>
-
                                 <motion.div
                                     animate={{ rotate: isPlaying ? 360 : 0 }}
                                     transition={{ repeat: Infinity, duration: 12, ease: "linear" }}
-                                    className="relative w-72 h-72 md:w-96 md:h-96 rounded-full shadow-[0_40px_100px_-20px_rgba(0,0,0,1)] p-[4px] bg-gradient-to-br from-white/30 via-white/5 to-black/60 overflow-hidden will-change-transform"
+                                    className="relative w-72 h-72 md:w-96 md:h-96 rounded-full shadow-[0_40px_100px_-20px_rgba(0,0,0,1)] p-[4px] bg-gradient-to-br from-white/30 via-white/5 to-black/60 overflow-hidden"
                                 >
                                     <div className="w-full h-full rounded-full bg-[#030303] flex items-center justify-center relative">
-                                        {/* Ultra-HD Grooves */}
                                         <div className="absolute inset-0 rounded-full opacity-80"
                                             style={{ background: "repeating-radial-gradient(circle, #000 0, #000 1px, #111 1.5px, #000 2px)" }} />
 
-                                        {/* Simple Ring Pulse Effect */}
-                                        <DiscPlayingEffect isPlaying={isPlaying} isBuffering={isBuffering} color={color} />
+                                        {/* Sparkling Effect */}
+                                        <DiscSparkles isPlaying={isPlaying} color={color} />
 
-                                        {/* Artwork Label with Realistic Spindle */}
+                                        <DiscPlayingEffect isPlaying={isPlaying} isBuffering={isBuffering} color={color} />
                                         <div
                                             className="w-28 h-28 md:w-36 md:h-36 rounded-full relative z-30 flex items-center justify-center border-[8px] border-[#080808] shadow-[inset_0_0_40px_rgba(0,0,0,1),0_0_20px_rgba(0,0,0,0.8)] overflow-hidden bg-black"
                                         >
-                                            {/* Center Spindle Cap (Metallic) */}
                                             <div className="w-6 h-6 rounded-full relative z-40 flex items-center justify-center bg-gradient-to-br from-[#888] via-[#222] to-[#444] border border-white/20 shadow-lg">
                                                 <div className="w-1.5 h-1.5 bg-black/40 rounded-full" />
                                             </div>
                                         </div>
                                     </div>
                                 </motion.div>
-
-                                {/* Tonearm assembly */}
-                                <div className="absolute -top-8 -right-16 w-32 h-44 z-30 pointer-events-none hidden md:block">
-                                    <svg viewBox="0 0 100 160" className="w-full h-full filter drop-shadow-[0_15px_15px_rgba(0,0,0,0.7)]">
-                                        <circle cx="85" cy="35" r="14" fill="#111" />
-                                        <circle cx="85" cy="35" r="6" fill="#444" />
-                                        <motion.g
-                                            animate={{ rotate: isPlaying ? [18, 22, 19, 23, 20] : 0, y: isPlaying ? [0, 1, 0, -1, 0] : 0 }}
-                                            transition={{ duration: 4, repeat: Infinity, times: [0, 0.25, 0.5, 0.75, 1], ease: "easeInOut" }}
-                                            style={{ originX: "85px", originY: "35px" }}
-                                        >
-                                            <path d="M85 35 L25 150" stroke="#222" strokeWidth="8" strokeLinecap="round" />
-                                            <path d="M85 35 L25 150" stroke="#444" strokeWidth="3" strokeLinecap="round" />
-                                            <rect x="15" y="142" width="20" height="15" rx="3" fill="#0a0a0a" transform="rotate(-30 25 150)" />
-                                            <circle cx="25" cy="150" r="2.5" fill="#f00" className="animate-pulse" />
-                                        </motion.g>
-                                    </svg>
-                                </div>
-
                             </div>
 
-                            {/* Song Meta (Japanese) - Added more spacing */}
-                            <div className="mt-12 text-center space-y-5 px-8 relative z-10">
+                            {/* Info */}
+                            <div className="mt-2 w-full flex flex-col items-center relative z-20">
                                 <motion.div
                                     key={getTitle()}
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
+                                    className="text-center w-full"
                                 >
-                                    <h2 className="text-3xl md:text-5xl font-bold text-white font-serif tracking-tight leading-tight mb-4">
-                                        {getTitle()}
-                                    </h2>
-                                    <p className="text-amber-100/30 uppercase tracking-[0.5em] text-[10px] md:text-xs font-black">
-                                        {getSubtitle()}
-                                    </p>
+                                    {/* TITLE */}
+                                    <h2 className="text-2xl md:text-4xl font-bold text-white font-serif tracking-tight leading-none mb-3 text-shadow-xl">{getTitle()}</h2>
+
+                                    {/* SEPARATOR */}
+                                    <div className="flex items-center justify-center gap-4 opacity-40 mb-3">
+                                        <div className="w-12 h-[1px] bg-gradient-to-r from-transparent to-white" />
+                                        <span className="text-[9px] font-black uppercase tracking-[0.3em] text-white whitespace-nowrap">宙の共鳴 / RESONANCE</span>
+                                        <div className="w-12 h-[1px] bg-gradient-to-l from-transparent to-white" />
+                                    </div>
+
+                                    {/* SUBTITLE */}
+                                    <p className="text-amber-100/40 uppercase tracking-[0.4em] text-[11px] font-black">{getSubtitle()}</p>
                                 </motion.div>
                             </div>
 
-                            {/* Celestial Resonance V7 (Pure Resonance) */}
-                            <div className="mt-auto h-36 w-full flex flex-col relative px-10">
-                                {/* Technical Detail Text */}
-                                <div className="absolute -top-6 left-10 flex items-center gap-3 opacity-30">
-                                    <div className="w-10 h-[1px] bg-white" />
-                                    <span className="text-[8px] font-black uppercase tracking-[0.4em] text-white">宙の共鳴周波数 / RESONANCE FREQ</span>
-                                </div>
-
-                                {/* Ethereal Foundation Block (New V7) */}
-                                <motion.div
-                                    animate={{
-                                        opacity: isPlaying ? [0.1, 0.2, 0.1] : 0.05,
-                                        scaleX: isPlaying ? [1, 1.02, 1] : 1
-                                    }}
-                                    transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                                    className="absolute bottom-12 left-10 right-10 h-0.5 bg-gradient-to-r from-transparent via-white to-transparent blur-sm z-0"
-                                />
-
-                                {/* Reflection Layer (Optimized) */}
-                                <div className="absolute bottom-4 left-10 right-10 h-10 flex items-start justify-center gap-[3px] blur-[3px] pointer-events-none">
-                                    {visualizerBars.map((_, i) => (
-                                        <ReflectionBar key={`ref-${i}`} i={i} isPlaying={isPlaying} />
-                                    ))}
-                                </div>
-
-                                {/* Visualizer Container */}
-                                <div className="h-20 w-full flex items-end justify-center gap-[4px] relative z-10 mt-6">
-                                    {visualizerBars.map((_, i) => (
-                                        <VisualizerBar key={i} i={i} isPlaying={isPlaying} color={color} />
-                                    ))}
-                                </div>
-                            </div>
+                            {/* VISUALIZER - Separated (Child of Left Panel) */}
+                            <CosmicPiano isPlaying={isPlaying} color={color} />
                         </div>
 
-                        {/* Right Section: Content & Media (56%) */}
-                        <div className="relative w-full md:w-[56%] h-full flex flex-col p-14 justify-center bg-white/[0.01]">
+                        {/* RIGHT SECTION (Content) */}
+                        <div className="relative w-full lg:w-[56%] shrink-0 flex flex-col p-8 lg:p-14 justify-start lg:justify-center bg-white/[0.01]">
 
-                            <div className="flex-1 flex flex-col justify-center max-w-2xl mx-auto w-full">
-                                <div className="flex items-center gap-6 mb-12 pr-20"> {/* Added pr-20 to avoid Close button overlap */}
-                                    <span className="px-5 py-2 rounded-2xl text-[11px] font-black bg-white/5 text-white/50 border border-white/10 uppercase tracking-[0.3em]">
+                            <div className="flex-1 flex flex-col justify-center max-w-2xl mx-auto w-full relative z-20">
+                                {/* Header */}
+                                <div className="flex flex-wrap items-center gap-4 lg:gap-6 mb-8 lg:mb-12 pr-10 lg:pr-20">
+                                    <span className="px-3 py-1.5 lg:px-5 lg:py-2 rounded-2xl text-[9px] lg:text-[11px] font-black bg-white/5 text-white/50 border border-white/10 uppercase tracking-[0.2em] lg:tracking-[0.3em] whitespace-nowrap">
                                         {getJPType(type)}
                                     </span>
-                                    <div className="h-[1px] flex-1 bg-gradient-to-r from-white/10 to-transparent" />
+                                    <div className="hidden lg:block h-[1px] flex-1 bg-gradient-to-r from-white/10 to-transparent" />
                                     {song?.tiktokUrl && (
-                                        <a
-                                            href={song.tiktokUrl}
-                                            target="_blank"
-                                            className="flex items-center gap-2 text-[10px] font-black text-white/30 hover:text-white/80 transition-all hover:scale-105"
-                                        >
+                                        <a href={song.tiktokUrl} target="_blank" className="flex items-center gap-2 text-[10px] font-black text-white/30 hover:text-white/80 transition-all hover:scale-105">
                                             <span className="uppercase tracking-[0.2em]">オリジナル動画を視聴</span>
                                             <ExternalLink className="w-4 h-4" />
                                         </a>
                                     )}
                                 </div>
 
+                                {/* Description */}
                                 <motion.p
                                     initial={{ opacity: 0, x: 20 }}
                                     animate={{ opacity: 1, x: 0 }}
@@ -535,91 +556,70 @@ export function CelestialModal({ isOpen, onClose, type, color = "rgb(255, 100, 2
                                     「{getDescription()}」
                                 </motion.p>
 
-                                {song && youtubeIdVal && (
-                                    <div className="relative w-full aspect-video rounded-[2.5rem] overflow-hidden bg-black shadow-[0_64px_128px_-32px_rgba(0,0,0,1)] border border-white/5 group transition-all duration-700 hover:scale-[1.02] hover:border-white/20">
-
-                                        {/* 1. The YouTube Player (Always rendered when interacted, sits behind thumbnail initially) */}
-                                        <div className="absolute inset-0 w-full h-full bg-black">
-                                            {hasInteracted && (
-                                                <div id={playerContainerId} className="w-full h-full object-cover" />
-                                            )}
-                                        </div>
-
-                                        {/* 2. The Thumbnail Overlay (Fades out only when ACTUALLY playing) */}
-                                        <div className={`absolute inset-0 w-full h-full transition-opacity duration-1000 z-20 ${isPlaying ? "opacity-0 pointer-events-none" : "opacity-100"}`}>
-                                            {thumbnailUrl && (
-                                                <img
-                                                    src={thumbnailUrl}
-                                                    alt="Video Thumbnail"
-                                                    className={`w-full h-full object-cover transition-all duration-700 ${isBuffering || hasInteracted ? "scale-105 blur-[2px]" : "scale-100 blur-0"}`}
-                                                />
-                                            )}
-
-                                            <div className="absolute inset-0 bg-black/20" />
-
-                                            {/* Center Controls Overlay */}
-                                            <div className="absolute inset-0 flex items-center justify-center">
-
-                                                {/* Initial Play Button */}
-                                                {!hasInteracted && (
-                                                    <div className="group/play cursor-pointer" onClick={togglePlayback}>
-                                                        <div className="p-8 rounded-full bg-white/10 border border-white/20 text-white shadow-2xl backdrop-blur-sm transition-all duration-500 transform group-hover/play:scale-110 group-hover/play:bg-white/20">
-                                                            <Play className="w-12 h-12 fill-current translate-x-1" />
-                                                        </div>
-                                                        <p className="mt-4 text-center text-xs font-black tracking-[0.2em] text-white/50 uppercase group-hover/play:text-white transition-colors">
-                                                            Play Video
-                                                        </p>
-                                                    </div>
-                                                )}
-
-                                                {/* Loading/Connecting State */}
-                                                {hasInteracted && !isPlaying && (
-                                                    <div className="flex flex-col items-center gap-4 animate-in fade-in duration-300">
-                                                        <div className="relative">
-                                                            <div className="w-16 h-16 rounded-full border-2 border-white/10 border-t-white animate-spin" />
-                                                            <div className="absolute inset-0 flex items-center justify-center">
-                                                                <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
-                                                            </div>
-                                                        </div>
-                                                        <span className="text-[10px] font-black tracking-[0.3em] text-white/60 uppercase animate-pulse">
-                                                            Connecting...
-                                                        </span>
-                                                    </div>
-                                                )}
+                                {/* Video Player */}
+                                <div className="mb-14 relative z-30">
+                                    {song && youtubeIdVal && (
+                                        <div className="relative w-full aspect-video rounded-[2.5rem] overflow-hidden bg-black shadow-[0_64px_128px_-32px_rgba(0,0,0,1)] border border-white/5 group transition-all duration-700 hover:scale-[1.02] hover:border-white/20 z-30">
+                                            <div className="absolute inset-0 w-full h-full bg-black">
+                                                {hasInteracted && <div id={playerContainerId} className="w-full h-full object-cover" />}
                                             </div>
+                                            <div className={`absolute inset-0 w-full h-full transition-opacity duration-1000 z-20 ${isPlaying ? "opacity-0 pointer-events-none" : "opacity-100"}`}>
+                                                {thumbnailUrl && (
+                                                    <img src={thumbnailUrl} alt="Video Thumbnail" className={`w-full h-full object-cover transition-all duration-700 ${isBuffering || hasInteracted ? "scale-105 blur-[2px]" : "scale-100 blur-0"}`} />
+                                                )}
+                                                <div className="absolute inset-0 bg-black/20" />
+                                                <div className="absolute inset-0 flex items-center justify-center">
+                                                    {(!hasInteracted || (isPlayerReady && !isPlaying && !isBuffering)) && (
+                                                        <div className="group/play cursor-pointer" onClick={(e) => { e.stopPropagation(); togglePlayback() }}>
+                                                            <div className="p-8 rounded-full bg-white/10 border border-white/20 text-white shadow-2xl backdrop-blur-sm transition-all duration-500 transform group-hover/play:scale-110 group-hover/play:bg-white/20">
+                                                                <Play className="w-12 h-12 fill-current translate-x-1" />
+                                                            </div>
+                                                            <p className="mt-4 text-center text-xs font-black tracking-[0.2em] text-white/50 uppercase group-hover/play:text-white transition-colors">Play Video</p>
+                                                        </div>
+                                                    )}
+                                                    {hasInteracted && !isPlaying && !isPlayerReady && (
+                                                        <div className="flex flex-col items-center gap-4 animate-in fade-in duration-300">
+                                                            <div className="relative">
+                                                                <div className="w-16 h-16 rounded-full border-2 border-white/10 border-t-white animate-spin" />
+                                                            </div>
+                                                            <span className="text-[10px] font-black tracking-[0.3em] text-white/60 uppercase animate-pulse">Connecting...</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className="absolute inset-0 pointer-events-none bg-gradient-to-br from-white/5 via-transparent to-black/40 z-30" />
                                         </div>
-
-                                        {/* Gradient Overlay for Aesthetics (on top of everything) */}
-                                        <div className="absolute inset-0 pointer-events-none bg-gradient-to-br from-white/5 via-transparent to-black/40 z-30" />
-                                    </div>
-                                )}
+                                    )}
+                                </div>
                             </div>
 
-                            {/* Localized Controls */}
-                            <div className="mt-14 flex items-center gap-7 max-w-2xl mx-auto w-full">
+                            {/* CONTROLS */}
+                            <div className="mt-auto md:mt-10 flex items-center gap-7 max-w-2xl mx-auto w-full relative z-40">
                                 <button
                                     onClick={togglePlayback}
-                                    className={`flex-[2] py-6 px-10 rounded-[1.5rem] font-black text-xs tracking-[0.3em] flex items-center justify-center gap-5 transition-all duration-500 transform active:scale-95 shadow-2xl ${isPlaying
+                                    className={`flex-[2] py-5 px-6 lg:py-6 lg:px-10 rounded-[1.5rem] font-black text-[10px] lg:text-xs tracking-[0.2em] lg:tracking-[0.3em] flex items-center justify-center gap-3 lg:gap-5 transition-all duration-500 transform active:scale-95 shadow-2xl ${isPlaying
                                         ? "bg-white/5 text-white/50 border border-white/20 hover:bg-white/10 hover:text-white"
                                         : "bg-amber-100 text-black hover:shadow-[0_20px_60px_-10px_rgba(251,191,36,0.6)] hover:-translate-y-1.5"
                                         }`}
                                 >
-                                    {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 fill-current" />}
-                                    {isPlaying ? "宇宙の共鳴を一時停止" : "宇宙の記憶を再生する"}
+                                    {isPlaying ? <Pause className="w-5 h-5 lg:w-6 lg:h-6" /> : <Play className="w-5 h-5 lg:w-6 lg:h-6 fill-current" />}
+                                    <span className="truncate">{isPlaying ? "宇宙の共鳴を一時停止" : "宇宙の記憶を再生する"}</span>
                                 </button>
 
                                 <button
                                     onClick={onClose}
-                                    className="flex-1 py-6 px-10 rounded-[1.5rem] font-bold text-xs tracking-[0.2em] bg-white/5 text-white/40 border border-white/10 hover:border-white/30 hover:text-white transition-all flex items-center justify-center gap-3"
+                                    className="flex-1 py-5 px-6 lg:py-6 lg:px-10 rounded-[1.5rem] font-bold text-[10px] lg:text-xs tracking-[0.2em] bg-white/5 text-white/40 border border-white/10 hover:border-white/30 hover:text-white transition-all flex items-center justify-center gap-3 whitespace-nowrap"
                                 >
                                     閉じる
                                 </button>
                             </div>
+
                         </div>
 
-                    </motion.div>
-                </div>
-            )}
-        </AnimatePresence>
+                    </motion.div >
+                </div >
+            )
+            }
+        </AnimatePresence >
     )
 }

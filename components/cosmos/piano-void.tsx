@@ -21,6 +21,8 @@ export function PianoVoid({ atmosphereColor }: Props) {
   const animationRef = useRef<number | null>(null)
   const isInitializedRef = useRef(false)
 
+  const scaleRef = useRef(1)
+
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas || isInitializedRef.current) return
@@ -33,6 +35,9 @@ export function PianoVoid({ atmosphereColor }: Props) {
     const resize = () => {
       canvas.width = window.innerWidth
       canvas.height = window.innerHeight
+      const isMobile = window.innerWidth < 768
+      const baseScale = window.innerWidth / 1920
+      scaleRef.current = isMobile ? Math.max(baseScale * 1.5, 0.5) : Math.max(baseScale, 0.6)
     }
     resize()
 
@@ -53,7 +58,7 @@ export function PianoVoid({ atmosphereColor }: Props) {
         x,
         y,
         radius: 0,
-        maxRadius: 160 + Math.random() * 30,
+        maxRadius: (160 + Math.random() * 30) * scaleRef.current,
         opacity: 1,
       })
 
@@ -69,7 +74,7 @@ export function PianoVoid({ atmosphereColor }: Props) {
 
       // Update and draw ripples
       ripplesRef.current = ripplesRef.current.filter((ripple) => {
-        ripple.radius += 3.5 * deltaTime
+        ripple.radius += 3.5 * scaleRef.current * deltaTime
         const progress = ripple.radius / ripple.maxRadius
         ripple.opacity = Math.max(0, 1 - Math.pow(progress, 1.4))
 
