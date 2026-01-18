@@ -119,7 +119,7 @@ export function LivingCosmos() {
 
     // Optimized particle count for better performance
     const isMobile = window.innerWidth < 768
-    const starCount = isMobile ? 100 : 200
+    const baseStarCount = isMobile ? 80 : 150
 
     // Use seeded random for consistent initialization (avoid hydration mismatch)
     let seed = 12345
@@ -128,29 +128,88 @@ export function LivingCosmos() {
       return seed / 233280
     }
 
-    const stars = Array.from({ length: starCount }, () => {
+    // Create star clusters for more realistic distribution
+    const clusterCount = isMobile ? 3 : 5
+    const clusters = Array.from({ length: clusterCount }, () => ({
+      x: seededRandom(),
+      y: seededRandom(),
+      radius: 0.15 + seededRandom() * 0.2,
+      density: 0.6 + seededRandom() * 0.4,
+    }))
+
+    // Milky Way band parameters
+    const milkyWayAngle = -30 * (Math.PI / 180) // -30 degrees
+    const milkyWayWidth = 0.25
+    const milkyWayIntensity = 0.7
+
+    const stars = Array.from({ length: baseStarCount }, (_, i) => {
       const rand = seededRandom()
-      const sizeRand = seededRandom()
-      // More varied star sizes with better distribution
-      let size = 0.3 + sizeRand * 2.5
-      if (sizeRand > 0.95) size += 1.5 // Some extra large stars
+
+      // Determine if star is in a cluster or Milky Way
+      let x, y
+      const inCluster = rand < 0.4 // 40% of stars in clusters
+      const inMilkyWay = rand >= 0.4 && rand < 0.7 // 30% in Milky Way
+
+      if (inCluster) {
+        // Place in a random cluster
+        const cluster = clusters[Math.floor(seededRandom() * clusters.length)]
+        const angle = seededRandom() * Math.PI * 2
+        const distance = seededRandom() * cluster.radius * cluster.density
+        x = cluster.x + Math.cos(angle) * distance
+        y = cluster.y + Math.sin(angle) * distance
+      } else if (inMilkyWay) {
+        // Place along Milky Way band
+        x = seededRandom()
+        const centerY = x * Math.tan(milkyWayAngle) + 0.5
+        const offset = (seededRandom() - 0.5) * milkyWayWidth
+        y = centerY + offset
+      } else {
+        // Random placement
+        x = seededRandom()
+        y = seededRandom()
+      }
+
+      // Clamp to screen bounds
+      x = Math.max(0, Math.min(1, x))
+      y = Math.max(0, Math.min(1, y))
+
+      // Depth layer (0 = far, 3 = near)
+      const depthRand = seededRandom()
+      let depth = 0
+      if (depthRand > 0.7) depth = 1
+      if (depthRand > 0.85) depth = 2
+      if (depthRand > 0.95) depth = 3
+
+      // Size based on depth
+      const baseSize = [0.3, 0.6, 1.0, 1.5][depth]
+      const sizeVariation = seededRandom() * 0.8
+      let size = baseSize + sizeVariation
+      if (seededRandom() > 0.97) size += 1.5 // Some extra large stars
+
+      // Star type based on size and randomness
+      const typeRand = seededRandom()
+      let starType: 'white-dwarf' | 'main-sequence' | 'blue-giant' | 'red-giant' | 'supergiant'
+      if (size < 0.8) starType = 'white-dwarf'
+      else if (typeRand > 0.95) starType = 'blue-giant'
+      else if (typeRand > 0.90) starType = 'red-giant'
+      else if (typeRand > 0.98) starType = 'supergiant'
+      else starType = 'main-sequence'
 
       return {
-        x: seededRandom(),
-        y: seededRandom(),
-        baseX: seededRandom(),
-        baseY: seededRandom(),
-        vy: 0.002 + seededRandom() * 0.003, // Extremely slow downward movement
+        x,
+        y,
+        baseX: x,
+        baseY: y,
+        vx: (seededRandom() - 0.5) * 0.0003 * (depth + 1), // Gentle horizontal drift
+        vy: (0.001 + seededRandom() * 0.002) * (depth + 1), // Vertical drift (faster for closer stars)
         size,
-        brightness: 0.5 + seededRandom() * 0.5,
-        speed: 0.3 + seededRandom() * 1.2, // Smoother speed variation
+        depth,
+        brightness: 0.4 + seededRandom() * 0.6,
+        speed: 0.3 + seededRandom() * 1.2,
         phase: seededRandom() * Math.PI * 2,
-        isGold: rand > 0.85,
-        isPurple: rand > 0.92,
-        isBright: rand > 0.96,
-        isBlue: rand > 0.88 && rand <= 0.92,
-        isPink: rand > 0.80 && rand <= 0.85,
-        pulseSpeed: 0.5 + seededRandom() * 1.5, // Individual pulse speeds
+        starType,
+        pulseSpeed: 0.5 + seededRandom() * 1.5,
+        inMilkyWay,
       }
     })
 
@@ -174,17 +233,34 @@ export function LivingCosmos() {
       ctx.fillStyle = bgGradient
       ctx.fillRect(0, 0, canvas.width, canvas.height)
 
-      // Dynamic nebula gradient (like intro page)
+      // Dynamic nebula gradient (very dark for deep space)
       const centerX = canvas.width / 2
       const centerY = canvas.height / 2
       const nebulaPulse = 0.8 + 0.2 * Math.sin(time * 0.3)
       const nebulaGrad = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, canvas.width * 0.5)
-      nebulaGrad.addColorStop(0, `rgba(139, 92, 246, ${0.08 * nebulaPulse})`)
-      nebulaGrad.addColorStop(0.4, `rgba(236, 72, 153, ${0.04 * nebulaPulse})`)
-      nebulaGrad.addColorStop(0.7, `rgba(251, 191, 36, ${0.02 * nebulaPulse})`)
+      nebulaGrad.addColorStop(0, `rgba(139, 92, 246, ${0.018 * nebulaPulse})`)
+      nebulaGrad.addColorStop(0.4, `rgba(236, 72, 153, ${0.009 * nebulaPulse})`)
+      nebulaGrad.addColorStop(0.7, `rgba(251, 191, 36, ${0.005 * nebulaPulse})`)
       nebulaGrad.addColorStop(1, "transparent")
       ctx.fillStyle = nebulaGrad
       ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+      // Milky Way band - diagonal glow across the screen
+      ctx.save()
+      ctx.translate(canvas.width / 2, canvas.height / 2)
+      ctx.rotate(-30 * (Math.PI / 180)) // -30 degrees
+
+      const milkyWayGradient = ctx.createLinearGradient(0, -canvas.height, 0, canvas.height)
+      const milkyWayAlpha = 0.02 + 0.008 * Math.sin(time * 0.2)
+      milkyWayGradient.addColorStop(0, "transparent")
+      milkyWayGradient.addColorStop(0.35, `rgba(200, 210, 255, ${milkyWayAlpha * 0.3})`)
+      milkyWayGradient.addColorStop(0.5, `rgba(220, 225, 255, ${milkyWayAlpha})`)
+      milkyWayGradient.addColorStop(0.65, `rgba(200, 210, 255, ${milkyWayAlpha * 0.3})`)
+      milkyWayGradient.addColorStop(1, "transparent")
+
+      ctx.fillStyle = milkyWayGradient
+      ctx.fillRect(-canvas.width, -canvas.height, canvas.width * 2, canvas.height * 2)
+      ctx.restore()
 
       // Nebula rendering (simplified)
       const speedMultiplier = isDayTimeRef.current ? nebulaSpeedsRef.current.day : nebulaSpeedsRef.current.night
@@ -265,10 +341,18 @@ export function LivingCosmos() {
         const twinkle = 0.5 + 0.5 * Math.sin(time * star.speed * star.pulseSpeed + star.phase + i * 0.1)
         const secondaryTwinkle = 0.6 + 0.4 * Math.cos(time * star.speed * star.pulseSpeed * 0.7 + star.phase)
 
-        // Extremely slow downward movement (from top to bottom)
+        // Gentle autonomous drift (both horizontal and vertical)
+        star.x += star.vx * deltaTime * 0.1
         star.y += star.vy * deltaTime * 0.1
 
-        // Wrap around: when star goes below screen, reappear at top
+        // Wrap around horizontally
+        if (star.x > 1.1) {
+          star.x = -0.1
+        } else if (star.x < -0.1) {
+          star.x = 1.1
+        }
+
+        // Wrap around vertically: when star goes below screen, reappear at top
         if (star.y > 1.1) {
           star.y = -0.1
           star.x = Math.random() // Randomize x position when reappearing
@@ -304,51 +388,64 @@ export function LivingCosmos() {
         const alpha = Math.max(0, Math.min(1, star.brightness * twinkle))
         const size = star.size * (0.85 + twinkle * 0.3)
 
-        // Enhanced color system using base RGB strings for safety
+        // Realistic star color system based on star type
         let baseRgb: string
         let glowRgb: string
         let coreAlphaMult = 1.0
         let glowAlphaMult = 1.0
+        let hasLensFlare = false
 
-        if (star.isBright) {
-          baseRgb = "255, 255, 255"
-          glowRgb = "255, 255, 255"
-          coreAlphaMult = 1.3
-          glowAlphaMult = 0.6
-        } else if (star.isGold) {
-          baseRgb = "251, 191, 36"
-          glowRgb = "251, 191, 36"
-          coreAlphaMult = 1.1
-          glowAlphaMult = 0.5
-        } else if (star.isPurple) {
-          baseRgb = "196, 181, 253"
-          glowRgb = "167, 139, 250"
-          coreAlphaMult = 1.1
-          glowAlphaMult = 0.5
-        } else if (star.isBlue) {
-          baseRgb = "147, 197, 253"
-          glowRgb = "59, 130, 246"
-          coreAlphaMult = 1.1
-          glowAlphaMult = 0.5
-        } else if (star.isPink) {
-          baseRgb = "251, 207, 232"
-          glowRgb = "236, 72, 153"
-          coreAlphaMult = 1.1
-          glowAlphaMult = 0.5
-        } else {
-          baseRgb = "255, 255, 255"
-          glowRgb = "200, 210, 255"
-          coreAlphaMult = 0.95
-          glowAlphaMult = 0.35
+        switch (star.starType) {
+          case 'blue-giant':
+            baseRgb = "147, 197, 253" // Blue
+            glowRgb = "59, 130, 246" // Deeper blue glow
+            coreAlphaMult = 1.4
+            glowAlphaMult = 0.7
+            hasLensFlare = size > 1.5
+            break
+          case 'red-giant':
+            baseRgb = "251, 146, 60" // Orange-red
+            glowRgb = "239, 68, 68" // Red glow
+            coreAlphaMult = 1.3
+            glowAlphaMult = 0.6
+            hasLensFlare = size > 1.5
+            break
+          case 'supergiant':
+            baseRgb = "255, 215, 0" // Gold
+            glowRgb = "251, 191, 36" // Golden glow
+            coreAlphaMult = 1.5
+            glowAlphaMult = 0.8
+            hasLensFlare = true
+            break
+          case 'white-dwarf':
+            baseRgb = "200, 210, 255" // Pale blue-white
+            glowRgb = "147, 197, 253" // Blue glow
+            coreAlphaMult = 0.9
+            glowAlphaMult = 0.3
+            break
+          default: // main-sequence
+            baseRgb = "255, 255, 255" // White
+            glowRgb = "200, 210, 255" // Pale blue glow
+            coreAlphaMult = 1.0
+            glowAlphaMult = 0.4
         }
+
+        // Extra brightness for Milky Way stars
+        if (star.inMilkyWay) {
+          coreAlphaMult *= 1.2
+          glowAlphaMult *= 1.3
+        }
+
+        // Depth-based opacity (farther = dimmer)
+        const depthAlpha = [0.4, 0.6, 0.8, 1.0][star.depth]
 
         // Multi-layer glow for all stars (more detailed)
         if (star.size > 0.8) {
           // Outer glow layer
-          const outerGlowSize = star.isBright ? size * 5 : size * 3.5
+          const outerGlowSize = hasLensFlare ? size * 6 : size * 3.5
           const outerGradient = ctx.createRadialGradient(x, y, 0, x, y, outerGlowSize)
-          outerGradient.addColorStop(0, `rgba(${glowRgb}, ${alpha * glowAlphaMult})`)
-          outerGradient.addColorStop(0.3, `rgba(${glowRgb}, ${alpha * 0.2})`)
+          outerGradient.addColorStop(0, `rgba(${glowRgb}, ${alpha * glowAlphaMult * depthAlpha})`)
+          outerGradient.addColorStop(0.3, `rgba(${glowRgb}, ${alpha * 0.2 * depthAlpha})`)
           outerGradient.addColorStop(1, "transparent")
           ctx.fillStyle = outerGradient
           ctx.beginPath()
@@ -356,10 +453,10 @@ export function LivingCosmos() {
           ctx.fill()
 
           // Middle glow layer
-          const midGlowSize = star.isBright ? size * 3 : size * 2
+          const midGlowSize = hasLensFlare ? size * 4 : size * 2
           const midGradient = ctx.createRadialGradient(x, y, 0, x, y, midGlowSize)
-          midGradient.addColorStop(0, `rgba(${glowRgb}, ${alpha * glowAlphaMult})`)
-          midGradient.addColorStop(0.5, `rgba(${glowRgb}, ${alpha * 0.4})`)
+          midGradient.addColorStop(0, `rgba(${glowRgb}, ${alpha * glowAlphaMult * depthAlpha})`)
+          midGradient.addColorStop(0.5, `rgba(${glowRgb}, ${alpha * 0.4 * depthAlpha})`)
           midGradient.addColorStop(1, "transparent")
           ctx.fillStyle = midGradient
           ctx.beginPath()
@@ -371,8 +468,8 @@ export function LivingCosmos() {
         if (star.size > 1.2) {
           const innerGlowSize = size * 1.5
           const innerGradient = ctx.createRadialGradient(x, y, 0, x, y, innerGlowSize)
-          innerGradient.addColorStop(0, `rgba(${baseRgb}, ${Math.min(1, alpha * coreAlphaMult)})`)
-          innerGradient.addColorStop(0.6, `rgba(${glowRgb}, ${alpha * glowAlphaMult})`)
+          innerGradient.addColorStop(0, `rgba(${baseRgb}, ${Math.min(1, alpha * coreAlphaMult * depthAlpha)})`)
+          innerGradient.addColorStop(0.6, `rgba(${glowRgb}, ${alpha * glowAlphaMult * depthAlpha})`)
           innerGradient.addColorStop(1, "transparent")
           ctx.fillStyle = innerGradient
           ctx.beginPath()
@@ -382,9 +479,9 @@ export function LivingCosmos() {
 
         // Star core with subtle gradient
         const coreGradient = ctx.createRadialGradient(x, y, 0, x, y, size)
-        coreGradient.addColorStop(0, `rgba(${baseRgb}, ${Math.min(1, alpha * coreAlphaMult * 1.05)})`)
-        coreGradient.addColorStop(0.7, `rgba(${baseRgb}, ${Math.min(1, alpha * coreAlphaMult)})`)
-        coreGradient.addColorStop(1, `rgba(${baseRgb}, ${alpha * 0.7})`)
+        coreGradient.addColorStop(0, `rgba(${baseRgb}, ${Math.min(1, alpha * coreAlphaMult * 1.05 * depthAlpha)})`)
+        coreGradient.addColorStop(0.7, `rgba(${baseRgb}, ${Math.min(1, alpha * coreAlphaMult * depthAlpha)})`)
+        coreGradient.addColorStop(1, `rgba(${baseRgb}, ${alpha * 0.7 * depthAlpha})`)
         ctx.fillStyle = coreGradient
         ctx.beginPath()
         ctx.arc(x, y, size, 0, Math.PI * 2)
@@ -392,10 +489,33 @@ export function LivingCosmos() {
 
         // Bright center point for larger stars
         if (star.size > 1.5) {
-          ctx.fillStyle = `rgba(255, 255, 255, ${alpha * secondaryTwinkle * 1.2})`
+          ctx.fillStyle = `rgba(255, 255, 255, ${alpha * secondaryTwinkle * 1.2 * depthAlpha})`
           ctx.beginPath()
           ctx.arc(x, y, size * 0.4, 0, Math.PI * 2)
           ctx.fill()
+        }
+
+        // Lens flare effect for supergiants and large stars
+        if (hasLensFlare && twinkle > 0.7) {
+          ctx.save()
+          ctx.translate(x, y)
+          ctx.globalAlpha = alpha * 0.6 * depthAlpha
+
+          // Horizontal flare
+          ctx.strokeStyle = `rgb(${baseRgb})`
+          ctx.lineWidth = 0.8
+          ctx.beginPath()
+          ctx.moveTo(-size * 4, 0)
+          ctx.lineTo(size * 4, 0)
+          ctx.stroke()
+
+          // Vertical flare
+          ctx.beginPath()
+          ctx.moveTo(0, -size * 4)
+          ctx.lineTo(0, size * 4)
+          ctx.stroke()
+
+          ctx.restore()
         }
       })
 

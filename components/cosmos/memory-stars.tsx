@@ -21,6 +21,8 @@ interface Star {
   song: Song
   rotation: number
   rotationSpeed: number
+  depthLayer: number
+  clusterIndex: number
 }
 
 interface Props {
@@ -61,22 +63,45 @@ export function MemoryStars({ emotionalColor, onSongHover }: Props) {
     window.addEventListener("resize", resize)
 
     if (starsRef.current.length === 0) {
+      // Create constellation-like patterns instead of simple circle
+      const centerX = canvas.width / 2
+      const centerY = canvas.height / 2
+
       starsRef.current = SONGS.map((song, i) => {
-        const angle = (i / SONGS.length) * Math.PI * 2
-        const radius = 250 + Math.random() * 150
+        // Divide stars into 3 depth layers
+        const depthLayer = i % 3 // 0 = far, 1 = mid, 2 = near
+        const baseRadius = [200, 280, 360][depthLayer] // Different radii for depth
+        const radiusVariation = 40 + Math.random() * 60 // Add variation
+        const radius = baseRadius + radiusVariation
+
+        // Create constellation patterns - group stars in clusters
+        const clusterIndex = Math.floor(i / 3) // 3 stars per cluster
+        const clusterAngle = (clusterIndex / Math.ceil(SONGS.length / 3)) * Math.PI * 2
+        const starInCluster = i % 3
+
+        // Offset within cluster for constellation effect
+        const clusterSpread = 0.3 // radians
+        const angle = clusterAngle + (starInCluster - 1) * clusterSpread * 0.5
+
+        // Add some randomness for natural look
+        const angleOffset = (Math.random() - 0.5) * 0.2
+        const finalAngle = angle + angleOffset
+
         return {
-          x: Math.cos(angle) * radius + canvas.width / 2,
-          y: Math.sin(angle) * radius + canvas.height / 2,
+          x: Math.cos(finalAngle) * radius + centerX,
+          y: Math.sin(finalAngle) * radius + centerY,
           vx: 0,
           vy: 0,
-          size: 6 + Math.random() * 8, // Smaller stars
-          brightness: 0.8 + Math.random() * 0.2,
+          size: 6 + Math.random() * 8 + depthLayer * 2, // Larger stars are closer
+          brightness: 0.7 + Math.random() * 0.3,
           color: song.color,
           songTitle: song.title,
           songArtist: song.artist,
           song,
           rotation: Math.random() * Math.PI * 2,
           rotationSpeed: 0.001 + Math.random() * 0.003,
+          depthLayer, // Store depth for parallax and rendering
+          clusterIndex, // Store cluster for connection lines
         }
       })
     }
@@ -91,6 +116,45 @@ export function MemoryStars({ emotionalColor, onSongHover }: Props) {
       ctx.clearRect(0, 0, canvas.width, canvas.height)
 
       const currentMousePos = mousePosRef.current
+
+      // Draw constellation connection lines first (behind stars)
+      ctx.save()
+      starsRef.current.forEach((star, i) => {
+        // Connect to other stars in the same cluster
+        starsRef.current.forEach((otherStar, j) => {
+          if (i >= j) return // Avoid duplicate lines
+          if (star.clusterIndex !== otherStar.clusterIndex) return // Only connect within cluster
+
+          const distance = Math.hypot(star.x - otherStar.x, star.y - otherStar.y)
+          if (distance > 200) return // Don't connect if too far apart
+
+          // Parse color for line
+          const colorMatch = star.color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/)
+          const r = colorMatch ? parseInt(colorMatch[1]) : 255
+          const g = colorMatch ? parseInt(colorMatch[2]) : 255
+          const b = colorMatch ? parseInt(colorMatch[3]) : 255
+
+          // Line opacity based on distance (closer = more visible)
+          const opacity = Math.max(0, 0.15 * (1 - distance / 200))
+
+          // Draw subtle glow line
+          ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${opacity * 0.5})`
+          ctx.lineWidth = 2
+          ctx.beginPath()
+          ctx.moveTo(star.x, star.y)
+          ctx.lineTo(otherStar.x, otherStar.y)
+          ctx.stroke()
+
+          // Draw core line
+          ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${opacity})`
+          ctx.lineWidth = 1
+          ctx.beginPath()
+          ctx.moveTo(star.x, star.y)
+          ctx.lineTo(otherStar.x, otherStar.y)
+          ctx.stroke()
+        })
+      })
+      ctx.restore()
 
       starsRef.current.forEach((star) => {
         // Mouse interaction
@@ -121,6 +185,12 @@ export function MemoryStars({ emotionalColor, onSongHover }: Props) {
           star.vx += Math.cos(angle) * force
           star.vy += Math.sin(angle) * force
         }
+
+        // Gentle orbital drift (perpendicular to center direction for rotation)
+        const orbitAngle = Math.atan2(centerDy, centerDx) + Math.PI / 2 // Perpendicular
+        const orbitForce = 0.008 * deltaTime // Very gentle
+        star.vx += Math.cos(orbitAngle) * orbitForce
+        star.vy += Math.sin(orbitAngle) * orbitForce
 
         // Damping
         const damping = Math.pow(0.98, deltaTime)

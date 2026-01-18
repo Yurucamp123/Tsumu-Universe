@@ -1,14 +1,15 @@
 import type { Song } from "@/types/song"
 
-export const SONGS: Song[] = [
+// Fallback songs data (used if API fails or during development)
+const FALLBACK_SONGS: Song[] = [
   {
     id: "1",
     title: "アルビレオ (Albireo)",
-    artist: "ロクデナシ (Rokudenashi)", // From #ロクデナシ
+    artist: "ロクデナシ (Rokudenashi)",
     color: "rgb(100, 149, 237)",
     description: "Piano cover of Albireo.",
     tiktokUrl: "https://www.tiktok.com/@uta.uta_p",
-    youtubeUrl: "https://www.youtube.com/watch?v=ZhTdw7nLMxM" // Short ID
+    youtubeUrl: "https://www.youtube.com/watch?v=ZhTdw7nLMxM"
   },
   {
     id: "2",
@@ -137,3 +138,33 @@ export const SONGS: Song[] = [
     youtubeUrl: "https://www.youtube.com/watch?v=bUlCj9pcGis"
   }
 ]
+
+// Function to fetch latest songs from YouTube API
+export async function getSongs(): Promise<Song[]> {
+  try {
+    const res = await fetch('/api/youtube', {
+      cache: 'no-store', // Always fetch fresh data
+      next: { revalidate: 0 }
+    })
+
+    if (!res.ok) {
+      console.warn('Failed to fetch from YouTube API, using fallback data')
+      return FALLBACK_SONGS
+    }
+
+    const songs = await res.json()
+
+    if (!Array.isArray(songs) || songs.length === 0) {
+      console.warn('Invalid YouTube API response, using fallback data')
+      return FALLBACK_SONGS
+    }
+
+    return songs
+  } catch (error) {
+    console.error('Error fetching songs from YouTube:', error)
+    return FALLBACK_SONGS
+  }
+}
+
+// Export static SONGS for backward compatibility and SSR
+export const SONGS = FALLBACK_SONGS

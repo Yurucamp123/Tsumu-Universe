@@ -7,4 +7,6 @@ export interface Song {
   youtubeUrl?: string
   musescoreUrl?: string
   tiktokUrl?: string
+  thumbnail?: string
+  publishedAt?: string
 }
