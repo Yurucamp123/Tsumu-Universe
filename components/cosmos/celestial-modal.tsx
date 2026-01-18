@@ -98,13 +98,14 @@ const CosmicPiano = memo(({ isPlaying, color }: { isPlaying: boolean, color: str
     const keys = useMemo(() => Array.from({ length: 80 }, (_, i) => i), [])
 
     return (
-        // Lifted UP (bottom-20) and DRASTICALLY Narrower Width (max-w-[300px] mx-auto)
+        // Lifted UP and DRASTICALLY Narrower Width
         // VISIBILITY FIX: Opacity 0 if not playing
+        // RESPONSIVE FIX: Adjusted for mobile/tablet to prevent title overlap
         <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: isPlaying ? 1 : 0 }}
             transition={{ duration: 1 }}
-            className="absolute bottom-20 left-0 right-0 h-96 overflow-visible pointer-events-none z-0 px-4 w-full max-w-[300px] mx-auto"
+            className="absolute bottom-12 sm:bottom-16 md:bottom-20 left-0 right-0 h-64 sm:h-80 md:h-96 overflow-visible pointer-events-none z-0 px-4 w-full max-w-[200px] sm:max-w-[250px] md:max-w-[300px] mx-auto"
         >
 
             {/* Nebula/Aurora Backdrop */}
@@ -429,7 +430,7 @@ export function CelestialModal({ isOpen, onClose, type, color = "rgb(255, 100, 2
                         animate={{ scale: 1, opacity: 1, y: 0 }}
                         exit={{ scale: 0.9, opacity: 0, y: 30 }}
                         transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                        className="relative w-full max-w-6xl h-full lg:h-[85vh] overflow-y-auto lg:overflow-hidden rounded-none lg:rounded-[3rem] border-0 lg:border border-white/20 bg-black/90 lg:bg-black/40 shadow-none lg:shadow-[0_32px_128px_-16px_rgba(0,0,0,1)] flex flex-col lg:flex-row backdrop-blur-[50px]"
+                        className="relative w-full max-w-6xl h-full md:h-[90vh] lg:h-[85vh] overflow-y-auto lg:overflow-hidden rounded-none lg:rounded-[3rem] border-0 lg:border border-white/20 bg-black/90 lg:bg-black/40 shadow-none lg:shadow-[0_32px_128px_-16px_rgba(0,0,0,1)] flex flex-col lg:flex-row backdrop-blur-[50px]"
                         style={{
                             boxShadow: `0 0 150px -40px ${color.replace("rgb", "rgba").replace(")", ", 0.5)")}, 
                           inset 0 0 0 1px rgba(255,255,255,0.1),
@@ -459,7 +460,7 @@ export function CelestialModal({ isOpen, onClose, type, color = "rgb(255, 100, 2
                         </button>
 
                         {/* LEFT SECTION (Record Player & Info & Visualizer) */}
-                        <div className="relative w-full lg:w-[44%] shrink-0 flex flex-col items-center justify-start pt-8 lg:pt-12 p-8 lg:p-14 border-b lg:border-b-0 lg:border-r border-white/10 bg-black/20 lg:bg-transparent min-h-[50vh] lg:min-h-full">
+                        <div className="relative w-full lg:w-[44%] shrink-0 flex flex-col items-center justify-start pt-6 sm:pt-8 lg:pt-12 p-6 sm:p-8 lg:p-14 border-b lg:border-b-0 lg:border-r border-white/10 bg-black/20 lg:bg-transparent min-h-[50vh] lg:min-h-full">
 
                             {/* Record Player Group */}
                             <div className="relative mb-8 group z-20">
@@ -480,7 +481,7 @@ export function CelestialModal({ isOpen, onClose, type, color = "rgb(255, 100, 2
                                 <motion.div
                                     animate={{ rotate: isPlaying ? 360 : 0 }}
                                     transition={{ repeat: Infinity, duration: 12, ease: "linear" }}
-                                    className="relative w-72 h-72 md:w-96 md:h-96 rounded-full shadow-[0_40px_100px_-20px_rgba(0,0,0,1)] p-[4px] bg-gradient-to-br from-white/30 via-white/5 to-black/60 overflow-hidden"
+                                    className="relative w-56 h-56 sm:w-72 sm:h-72 md:w-80 md:h-80 lg:w-96 lg:h-96 rounded-full shadow-[0_40px_100px_-20px_rgba(0,0,0,1)] p-[4px] bg-gradient-to-br from-white/30 via-white/5 to-black/60 overflow-hidden"
                                 >
                                     <div className="w-full h-full rounded-full bg-[#030303] flex items-center justify-center relative">
                                         <div className="absolute inset-0 rounded-full opacity-80"
@@ -510,17 +511,17 @@ export function CelestialModal({ isOpen, onClose, type, color = "rgb(255, 100, 2
                                     className="text-center w-full"
                                 >
                                     {/* TITLE */}
-                                    <h2 className="text-2xl md:text-4xl font-bold text-white font-serif tracking-tight leading-none mb-3 text-shadow-xl">{getTitle()}</h2>
+                                    <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white font-serif tracking-tight leading-none mb-2 sm:mb-3 text-shadow-xl">{getTitle()}</h2>
 
                                     {/* SEPARATOR */}
-                                    <div className="flex items-center justify-center gap-4 opacity-40 mb-3">
-                                        <div className="w-12 h-[1px] bg-gradient-to-r from-transparent to-white" />
-                                        <span className="text-[9px] font-black uppercase tracking-[0.3em] text-white whitespace-nowrap">宙の共鳴 / RESONANCE</span>
-                                        <div className="w-12 h-[1px] bg-gradient-to-l from-transparent to-white" />
+                                    <div className="flex items-center justify-center gap-2 sm:gap-4 opacity-40 mb-2 sm:mb-3">
+                                        <div className="w-8 sm:w-12 h-[1px] bg-gradient-to-r from-transparent to-white" />
+                                        <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-[0.2em] sm:tracking-[0.3em] text-white whitespace-nowrap">宙の共鳴 / RESONANCE</span>
+                                        <div className="w-8 sm:w-12 h-[1px] bg-gradient-to-l from-transparent to-white" />
                                     </div>
 
                                     {/* SUBTITLE */}
-                                    <p className="text-amber-100/40 uppercase tracking-[0.4em] text-[11px] font-black">{getSubtitle()}</p>
+                                    <p className="text-amber-100/40 uppercase tracking-[0.3em] sm:tracking-[0.4em] text-[10px] sm:text-[11px] font-black">{getSubtitle()}</p>
                                 </motion.div>
                             </div>
 
