@@ -661,8 +661,8 @@ export function GalaxiesNebulas({ atmosphereColor, onHover }: Props) {
       return
     }
 
-    // Forward interactions
-    if (canvasRef.current) {
+    // Forward interactions (only for trusted user events, not synthetic ones)
+    if (canvasRef.current && e.isTrusted) {
       canvasRef.current.style.pointerEvents = "none"
       const elementBelow = document.elementFromPoint(e.clientX, e.clientY)
       canvasRef.current.style.pointerEvents = "auto"

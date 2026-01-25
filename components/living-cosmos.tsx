@@ -12,6 +12,7 @@ import { FireworkEffect } from "@/components/connection/firework-effect"
 import { SuccessNotification } from "@/components/connection/success-notification"
 import { ObservatoryButton } from "@/components/observatory/observatory-button"
 import { ObservatoryModal } from "@/components/observatory/observatory-modal"
+import { LetterModal } from "@/components/letter-modal"
 import { isJapanDaytime } from "@/utils/time"
 
 interface AtmosphereColors {
@@ -32,6 +33,7 @@ export function LivingCosmos() {
   const [isMessageModalOpen, setIsMessageModalOpen] = useState(false)
   const [showFirework, setShowFirework] = useState(false)
   const [showSuccessNotification, setShowSuccessNotification] = useState(false)
+  const [isLetterModalOpen, setIsLetterModalOpen] = useState(false)
 
   // Use refs to avoid re-renders
   const atmosphereColorsRef = useRef<AtmosphereColors>(atmosphereColors)
@@ -550,20 +552,38 @@ export function LivingCosmos() {
       <MemoryStars emotionalColor={atmosphereColors.primary} onSongHover={handleSongHover} />
 
       {/* Welcome text - always visible, no opacity transition */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-30">
-        <h1
-          className="text-6xl md:text-8xl font-serif mb-4"
-          style={{
-            background: "linear-gradient(135deg, #fef3c7 0%, #fbbf24 30%, #f59e0b 60%, #ea580c 100%)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-            filter: "drop-shadow(0 0 40px rgba(251, 191, 36, 0.6))",
-            opacity: 1,
-          }}
+      <div className="absolute inset-0 flex flex-col items-center justify-center z-30 pointer-events-none">
+        <div
+          className="pointer-events-auto cursor-pointer group transition-transform duration-700 hover:scale-110"
+          onClick={() => setIsLetterModalOpen(true)}
         >
-          つむの宇宙
-        </h1>
-        <p className="text-amber-100/50 text-lg tracking-[0.3em] uppercase" style={{ opacity: 1 }}>
+          <h1
+            className="text-6xl md:text-8xl font-serif mb-4 transition-all duration-500 drop-shadow-[0_0_40px_rgba(251,191,36,0.6)] group-hover:drop-shadow-[0_0_80px_rgba(251,191,36,1)]"
+            style={{
+              background: "linear-gradient(135deg, #fef3c7 0%, #fbbf24 30%, #f59e0b 60%, #ea580c 100%)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              opacity: 1,
+            }}
+          >
+            つむの宇宙
+          </h1>
+
+
+
+          {/* Tooltip */}
+          <div className="absolute bottom-full mb-6 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-500 transform group-hover:translate-y-0 translate-y-2 pointer-events-none">
+            <div className="relative bg-black/60 backdrop-blur-md px-5 py-2 rounded-full border border-amber-500/30 flex items-center gap-2 shadow-[0_0_20px_rgba(251,191,36,0.15)]">
+              {/* Arrow pointing down */}
+              <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-black/60 border-b border-r border-amber-500/30 transform rotate-45"></div>
+
+              <span className="text-amber-400 text-xs animate-pulse">✨</span>
+              <span className="text-amber-100 font-serif tracking-widest text-sm whitespace-nowrap">クリックして手紙を読む</span>
+              <span className="text-amber-400 text-xs animate-pulse">✨</span>
+            </div>
+          </div>
+        </div>
+        <p className="text-amber-100/50 text-lg tracking-[0.3em] uppercase transition-colors duration-500 group-hover:text-amber-100 group-hover:drop-shadow-[0_0_10px_rgba(251,191,36,0.8)] mt-2" style={{ opacity: 1 }}>
           あなたの宇宙へようこそ
         </p>
       </div>
@@ -585,6 +605,10 @@ export function LivingCosmos() {
         onClose={() => setIsMessageModalOpen(false)}
         onSend={handleMessageSend}
       />
+
+      {/* Letter Modal */}
+      <LetterModal isOpen={isLetterModalOpen} onClose={() => setIsLetterModalOpen(false)} />
+
       {showFirework && <FireworkEffect onComplete={() => setShowFirework(false)} />}
       <SuccessNotification
         isVisible={showSuccessNotification}

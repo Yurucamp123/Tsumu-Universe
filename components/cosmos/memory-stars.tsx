@@ -360,8 +360,8 @@ export function MemoryStars({ emotionalColor, onSongHover }: Props) {
       setSelectedStar(clickedStar)
       setModalOpen(true)
     } else {
-      // Forward click to elements below
-      if (canvasRef.current) {
+      // Forward click to elements below (only for trusted user events, not synthetic ones)
+      if (canvasRef.current && e.isTrusted) {
         canvasRef.current.style.pointerEvents = 'none'
         const elementBelow = document.elementFromPoint(e.clientX, e.clientY)
         canvasRef.current.style.pointerEvents = 'auto'
