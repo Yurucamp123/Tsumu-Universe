@@ -1,0 +1,110 @@
+1. Màn Create/Edit Study
+Áp dụng cho:
+studies-modal.component.html
+studies-modal.component.ts
+StudiesActions.ts
+
+Task:
+
+Tăng giới hạn input Protocol ID từ 20 lên 50 ở modal Create/Edit Study.
+Đảm bảo create study với Protocol ID dài hơn limit cũ vẫn submit được.
+Đảm bảo update study từ modal Edit vẫn submit được với Protocol ID dài.
+Encode Protocol ID khi gọi API:
+duplicate check
+get CLW by protocolId
+Rà lại logic create, duplicate, update để chắc rằng không có bước nào cắt chuỗi.
+Nếu business yêu cầu, trim khoảng trắng đầu/cuối trước submit.
+Nếu backend trả lỗi độ dài hoặc format, hiển thị message đúng cho user.
+2. Màn Studies List và Filter
+Áp dụng cho:
+studies-list.component.html
+studies-list.component.ts
+studies-list-item.component.html
+studies-list-item.component.scss
+
+Task:
+
+Tăng maxlength của ô filter Protocol ID lên 50.
+Verify filter/search hoạt động với Protocol ID dài 21-50 ký tự.
+Verify search không bị lỗi với Protocol ID có ký tự đặc biệt.
+Review UI list item vì dòng:
+Protocol ID: ... - Sponsor: ...
+rất dễ vỡ layout khi protocol dài.
+Quyết định cách hiển thị:
+wrap nhiều dòng
+truncate + tooltip
+tách sponsor xuống dòng riêng
+Update CSS nếu cần để không làm vỡ card study list.
+Verify click vào study từ list vẫn ổn khi Protocol ID dài.
+3. Màn Study Parameters
+Áp dụng cho:
+section-study-parameters.component.html
+section-study-parameters.component.ts
+
+Task:
+
+Tăng maxlength của ILS Protocol ID từ 20 lên 50.
+Giữ nguyên rule required hiện có.
+Verify user có thể sửa Protocol ID dài và save thành công.
+Verify reload/retrieve study vẫn trả về đúng full value.
+Nếu save fail từ backend, rollback UI phải rõ ràng, không làm mất dữ liệu hiển thị sai.
+Nếu business có trim/normalize rule thì áp dụng tại đây.
+Verify các validation message vẫn đúng.
+4. Header, Sections, các màn đọc dữ liệu study
+Áp dụng cho:
+header.component.html
+header.component.ts
+sections.component.html
+sections.component.ts
+section-actions.component.ts
+section-clinical-studies-technical-review.component.html
+section-clinical-studies-technical-review.component.ts
+ebv-cstr.component.html
+
+Task:
+
+Review tất cả nơi hiển thị Protocol ID để đảm bảo chuỗi dài không bị vỡ layout hoặc che khuất thông tin khác.
+Verify các helper getProtocolId() vẫn trả về nguyên giá trị đầy đủ.
+Verify header/subheader vẫn hiển thị đúng Protocol ID dài cho study mới và study cũ.
+Verify old CLW format @@_@@ không bị ảnh hưởng.
+Verify read mode và print mode đều hiển thị đúng.
+5. Compare Version, Version History, các flow downstream nội bộ
+Áp dụng cho:
+compare-version-dialog.component.ts
+version-history-cstr.component.ts
+section-version-history-clw.component.ts
+reference-range-report.component.ts
+
+Task:
+
+Verify các flow compare/version history dùng Protocol ID dài không lỗi.
+Verify file naming cho compare version không lỗi khi protocol dài.
+Verify export/report từ các section này vẫn nhận full protocol.
+Verify logic study cũ có @@_@@ vẫn chạy như trước.
+6. Export PDF / Excel / CSV và downstream report
+Áp dụng cho:
+print-clw.service.ts
+print-clw.component.ts
+export-excel.service.ts
+csv-utils.ts
+scpt-data-mapper.ts
+header.component.ts
+
+Task:
+
+Verify PDF filename vẫn tạo đúng với Protocol ID dài.
+Verify Excel filename vẫn tạo đúng với Protocol ID dài.
+Verify compare-version PDF filename vẫn đúng.
+Verify CSV filename và CSV content mapper vẫn giữ full Protocol ID.
+Nếu cần, sanitize filename để tránh lỗi ký tự/path limit trên Windows.
+Verify dữ liệu bên trong PDF/Excel/CSV/report vẫn là full Protocol ID, không bị cắt.
+Verify mọi downstream report/consumer trong FE đều lấy đúng field protocolId.
+7. Error handling / validation message
+Áp dụng cho:
+interceptor-constants.ts
+
+Task:
+
+Nếu backend bổ sung lỗi mới cho over-length hoặc invalid protocol, map message rõ ràng tại interceptor.
+Giữ nguyên xử lý duplicate error hiện có.
+Đảm bảo message user-facing nhất quán giữa create, update và save section.
